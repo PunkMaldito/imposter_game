@@ -117,8 +117,22 @@ function generateCode() {
   return code;
 }
 
-function randomPair() {
-  return WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)];
+function randomPair(room) {
+  const pool = (room.customPairs && room.customPairs.length) ? room.customPairs : WORD_PAIRS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function parseCustomWords(text) {
+  return (text || '')
+    .split('\n')
+    .map(line => line.split(',').map(s => s.trim()))
+    .filter(([civilian, imposter]) => civilian && imposter)
+    .map(([civilian, imposter, category]) => ({
+      civilian: civilian.substring(0, 30),
+      imposter: imposter.substring(0, 30),
+      category: (category || 'Personalizado').substring(0, 30),
+    }))
+    .slice(0, 200);
 }
 
 function publicPlayers(room) {
@@ -156,6 +170,7 @@ io.on('connection', (socket) => {
       players: new Map(),
       state: 'lobby',
       wordPair: null, imposterCount: 1,
+      customPairs: [], customWordsText: '',
       clueOrder: [], clueIndex: 0, readyCount: 0,
       lastResults: null,
     };
@@ -169,7 +184,7 @@ io.on('connection', (socket) => {
     rooms.set(code, room);
     socket.join(code);
     socket.emit('room-created', { code });
-    socket.emit('lobby-update', { players: publicPlayers(room), isHost: true, imposterCount: 1, code });
+    socket.emit('lobby-update', { players: publicPlayers(room), isHost: true, imposterCount: 1, customWordsCount: 0, code });
     console.log(`[+] Room ${code} created by "${name}"`);
   });
 
@@ -196,6 +211,8 @@ io.on('connection', (socket) => {
         players: publicPlayers(room),
         isHost: player.isHost,
         imposterCount: room.imposterCount,
+        customWordsCount: room.customPairs.length,
+        customWordsText: player.isHost ? room.customWordsText : undefined,
         word: player.word,
         isImposter: player.isImposter,
         category: room.wordPair?.category,
@@ -231,8 +248,8 @@ io.on('connection', (socket) => {
     });
 
     socket.join(upper);
-    socket.emit('room-joined', { code: upper, isHost: false, imposterCount: room.imposterCount, players: publicPlayers(room) });
-    io.to(upper).emit('lobby-update', { players: publicPlayers(room), imposterCount: room.imposterCount, code: upper });
+    socket.emit('room-joined', { code: upper, isHost: false, imposterCount: room.imposterCount, customWordsCount: room.customPairs.length, players: publicPlayers(room) });
+    io.to(upper).emit('lobby-update', { players: publicPlayers(room), imposterCount: room.imposterCount, customWordsCount: room.customPairs.length, code: upper });
     console.log(`[+] "${name}" joined ${upper}`);
   });
 
@@ -242,7 +259,17 @@ io.on('connection', (socket) => {
     if (!room || room.hostToken !== token || room.state !== 'lobby') return;
     const max = Math.max(1, Math.floor((room.players.size - 1) / 2));
     room.imposterCount = Math.max(1, Math.min(imposterCount, max));
-    io.to(code).emit('lobby-update', { players: publicPlayers(room), imposterCount: room.imposterCount, code });
+    io.to(code).emit('lobby-update', { players: publicPlayers(room), imposterCount: room.imposterCount, customWordsCount: room.customPairs.length, code });
+  });
+
+  // UPDATE CUSTOM WORDS (host only)
+  socket.on('update-words', ({ code, token, wordsText }) => {
+    const room = rooms.get(code);
+    if (!room || room.hostToken !== token || room.state !== 'lobby') return;
+    room.customWordsText = (wordsText || '').substring(0, 10000);
+    room.customPairs = parseCustomWords(room.customWordsText);
+    socket.emit('words-updated', { customWordsCount: room.customPairs.length });
+    io.to(code).emit('lobby-update', { players: publicPlayers(room), imposterCount: room.imposterCount, customWordsCount: room.customPairs.length, code });
   });
 
   // START GAME (host only)
@@ -255,7 +282,7 @@ io.on('connection', (socket) => {
     }
 
     room.state = 'revealing';
-    room.wordPair = randomPair();
+    room.wordPair = randomPair(room);
     room.readyCount = 0;
 
     const tokens = Array.from(room.players.keys());
@@ -418,7 +445,7 @@ io.on('connection', (socket) => {
     room.readyCount = 0;
     room.lastResults = null;
     for (const [, player] of room.players) resetPlayer(player);
-    io.to(code).emit('back-to-lobby', { players: publicPlayers(room), imposterCount: room.imposterCount, code });
+    io.to(code).emit('back-to-lobby', { players: publicPlayers(room), imposterCount: room.imposterCount, customWordsCount: room.customPairs.length, code });
   });
 
   // DISCONNECT

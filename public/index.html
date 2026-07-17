@@ -82,6 +82,15 @@
     input[type="text"]:focus { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-dim); }
     input[type="text"]::placeholder { color: var(--muted); }
 
+    textarea {
+      width: 100%; background: var(--surface-2); border: 1.5px solid var(--border);
+      border-radius: var(--r-sm); color: var(--text); font-family: var(--font-b);
+      font-size: 13px; padding: 10px 12px; outline: none; resize: vertical;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    textarea:focus { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-dim); }
+    textarea::placeholder { color: var(--muted); }
+
     /* ── Buttons ── */
     .btn {
       display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -430,6 +439,11 @@
             <button type="button" class="counter-btn" id="btn-inc">+</button>
           </div>
         </div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px">
+          <span class="settings-label">Palavras personalizadas <span id="words-status" style="color:var(--muted)">(usando padrão)</span></span>
+          <textarea id="input-words" rows="3" placeholder="Uma dupla por linha: civil, impostor[, categoria]&#10;Ex: Leão, Tigre, Animais&#10;Deixe em branco para usar as palavras padrão"></textarea>
+          <button type="button" class="btn btn-outline" id="btn-save-words" style="width:auto;align-self:flex-start;padding:8px 16px;font-size:13px">Salvar palavras</button>
+        </div>
         <div style="margin-top:14px">
           <button type="button" class="btn btn-primary" id="btn-start">Iniciar jogo</button>
         </div>
@@ -561,6 +575,7 @@ let isHost      = false;
 let myWord      = null;
 let isImposter  = false;
 let imposterCount = 1;
+let customWordsCount = 0;
 let players     = [];
 let clueOrder   = [];
 let clueIndex   = 0;
@@ -676,10 +691,22 @@ document.getElementById('btn-start').addEventListener('click', () => {
   socket.emit('start-game', { code: roomCode, token: myToken });
 });
 
+document.getElementById('btn-save-words').addEventListener('click', () => {
+  const wordsText = document.getElementById('input-words').value;
+  socket.emit('update-words', { code: roomCode, token: myToken, wordsText });
+});
+
+function renderWordsStatus() {
+  document.getElementById('words-status').textContent = customWordsCount > 0
+    ? `(${customWordsCount} dupla${customWordsCount !== 1 ? 's' : ''} personalizada${customWordsCount !== 1 ? 's' : ''})`
+    : '(usando padrão)';
+}
+
 function renderLobby(data) {
   roomCode      = data.code;
   isHost        = data.isHost;
   imposterCount = data.imposterCount || 1;
+  customWordsCount = data.customWordsCount || 0;
   players       = data.players || [];
 
   document.getElementById('lobby-code').textContent      = roomCode;
@@ -688,6 +715,7 @@ function renderLobby(data) {
   document.getElementById('lobby-chips').innerHTML       = players.map(chipHtml).join('');
   document.getElementById('host-zone').style.display     = isHost ? 'block' : 'none';
   document.getElementById('guest-zone').style.display    = isHost ? 'none' : 'block';
+  renderWordsStatus();
 }
 
 // ─── Revealing ───────────────────────────────────────────────────────────────
@@ -1018,7 +1046,8 @@ socket.on('state-restore', data => {
 
   switch (data.state) {
     case 'lobby':
-      renderLobby({ code: data.code, players, isHost, imposterCount });
+      renderLobby({ code: data.code, players, isHost, imposterCount, customWordsCount: data.customWordsCount });
+      if (isHost && data.customWordsText) document.getElementById('input-words').value = data.customWordsText;
       showScreen('lobby');
       break;
     case 'revealing':
@@ -1049,6 +1078,12 @@ socket.on('state-restore', data => {
       if (data.results) { renderResults(data.results); showScreen('results'); }
       break;
   }
+});
+
+socket.on('words-updated', ({ customWordsCount: n }) => {
+  customWordsCount = n;
+  renderWordsStatus();
+  showToast(n > 0 ? `${n} dupla${n !== 1 ? 's' : ''} salva${n !== 1 ? 's' : ''}` : 'Usando palavras padrão');
 });
 
 socket.on('error', ({ message }) => showToast(message));
