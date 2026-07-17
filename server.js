@@ -123,16 +123,16 @@ function randomPair(room) {
 }
 
 function parseCustomWords(text) {
-  return (text || '')
-    .split('\n')
-    .map(line => line.split(',').map(s => s.trim()))
-    .filter(([civilian, imposter]) => civilian && imposter)
-    .map(([civilian, imposter, category]) => ({
-      civilian: civilian.substring(0, 30),
-      imposter: imposter.substring(0, 30),
-      category: (category || 'Personalizado').substring(0, 30),
-    }))
-    .slice(0, 200);
+  const pairs = [];
+  for (const line of (text || '').split('\n')) {
+    const words = line.split(',').map(s => s.trim()).filter(Boolean).map(w => w.substring(0, 30));
+    if (words.length < 2) continue;
+    const imposter = words[words.length - 1];
+    for (const civilian of words.slice(0, -1)) {
+      pairs.push({ civilian, imposter, category: 'Personalizado' });
+    }
+  }
+  return pairs.slice(0, 200);
 }
 
 function publicPlayers(room) {
