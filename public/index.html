@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>O Imposter</title>
+  <title>O Impostor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -155,7 +155,7 @@
     .badge-host { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(245,158,11,.4); }
     .badge-you  { background: var(--violet-dim); color: var(--violet); border: 1px solid rgba(129,140,248,.4); }
 
-    /* ── Imposter counter ── */
+    /* ── Impostor counter ── */
     .settings-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 0; border-top: 1px solid var(--border);
@@ -381,7 +381,7 @@
   <div class="screen active" id="screen-landing">
     <div class="logo">
       <span class="logo-mark">🕵️</span>
-      <div class="logo-title">O Imposter</div>
+      <div class="logo-title">O Impostor</div>
       <div class="logo-sub">Quem está mentindo entre seus amigos?</div>
     </div>
     <div class="card">
@@ -423,7 +423,7 @@
       <div class="chips" id="lobby-chips"></div>
       <div id="host-zone" style="display:none">
         <div class="settings-row">
-          <span class="settings-label">Imposteres</span>
+          <span class="settings-label">Impostores</span>
           <div class="counter">
             <button type="button" class="counter-btn" id="btn-dec">−</button>
             <span class="counter-val" id="imp-count">1</span>
@@ -510,7 +510,7 @@
     </div>
     <div class="card">
       <div style="text-align:center;margin-bottom:18px">
-        <div style="font-family:var(--font-d);font-size:22px;font-weight:800">Quem é o Imposter?</div>
+        <div style="font-family:var(--font-d);font-size:22px;font-weight:800">Quem é o Impostor?</div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px">Vote em quem você acha que está mentindo</div>
       </div>
       <div class="vote-list" id="vote-list"></div>
@@ -721,7 +721,7 @@ function renderRevealing(word, imposter, category) {
   document.getElementById('cf-cat').textContent  = category || '';
   document.getElementById('cf-word').textContent = word || '';
   document.getElementById('cf-role').textContent = imposter
-    ? '⚠️ Você é o Imposter'
+    ? '⚠️ Você é o Impostor'
     : '🙂 Você é um Cidadão';
 
   if (imposter) { $cardFront.classList.add('imp'); }
@@ -883,14 +883,14 @@ function renderResults(data) {
     hero.className = 'result-hero win';
     icon.textContent    = '🎉';
     outcome.textContent = 'Civis vencem!';
-    detail.textContent  = `${eliminated?.name} era o Imposter e foi eliminado.`;
+    detail.textContent  = `${eliminated?.name} era o Impostor e foi eliminado.`;
   } else {
     hero.className = 'result-hero lose';
     icon.textContent    = '👻';
-    outcome.textContent = 'O Imposter vence!';
+    outcome.textContent = 'O Impostor vence!';
     detail.textContent  = eliminated
-      ? `${eliminated.name} foi eliminado, mas não era o Imposter.`
-      : 'O Imposter sobreviveu à votação.';
+      ? `${eliminated.name} foi eliminado, mas não era o Impostor.`
+      : 'O Impostor sobreviveu à votação.';
   }
 
   document.getElementById('words-grid').innerHTML = `
@@ -899,7 +899,7 @@ function renderResults(data) {
       <div class="wg-word">${esc(civilianWord)}</div>
     </div>
     <div class="wg-pill imp">
-      <div class="wg-label">Imposter</div>
+      <div class="wg-label">Impostor</div>
       <div class="wg-word">${esc(imposterWord)}</div>
     </div>`;
 

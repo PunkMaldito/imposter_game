@@ -443,5 +443,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`\n🕵️  O Imposter rodando em http://localhost:${PORT}\n`);
+  console.log(`\n🕵️  O Impostor rodando em http://localhost:${PORT}\n`);
 });
