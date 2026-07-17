@@ -441,7 +441,7 @@
         </div>
         <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px">
           <span class="settings-label">Palavras personalizadas <span id="words-status" style="color:var(--muted)">(usando padrão)</span></span>
-          <textarea id="input-words" rows="3" placeholder="Uma linha por grupo: palavras dos civis, ..., palavra do impostor (a última)&#10;Ex: Leão, Tigre, Gato, Macaco&#10;Deixe em branco para usar as palavras padrão"></textarea>
+          <textarea id="input-words" rows="3" placeholder="Uma linha por jogo, na ordem: palavras dos civis, ..., palavra do impostor (a última)&#10;Ex: Leão, Tigre, Gato, Macaco&#10;Cada linha vira um jogo; ao acabar, volta para a primeira&#10;Deixe em branco para usar as palavras padrão"></textarea>
           <button type="button" class="btn btn-outline" id="btn-save-words" style="width:auto;align-self:flex-start;padding:8px 16px;font-size:13px">Salvar palavras</button>
         </div>
         <div style="margin-top:14px">
@@ -698,7 +698,7 @@ document.getElementById('btn-save-words').addEventListener('click', () => {
 
 function renderWordsStatus() {
   document.getElementById('words-status').textContent = customWordsCount > 0
-    ? `(${customWordsCount} dupla${customWordsCount !== 1 ? 's' : ''} personalizada${customWordsCount !== 1 ? 's' : ''})`
+    ? `(${customWordsCount} jogo${customWordsCount !== 1 ? 's' : ''} personalizado${customWordsCount !== 1 ? 's' : ''} em sequência)`
     : '(usando padrão)';
 }
 
@@ -1083,7 +1083,7 @@ socket.on('state-restore', data => {
 socket.on('words-updated', ({ customWordsCount: n }) => {
   customWordsCount = n;
   renderWordsStatus();
-  showToast(n > 0 ? `${n} dupla${n !== 1 ? 's' : ''} salva${n !== 1 ? 's' : ''}` : 'Usando palavras padrão');
+  showToast(n > 0 ? `${n} jogo${n !== 1 ? 's' : ''} salvo${n !== 1 ? 's' : ''}` : 'Usando palavras padrão');
 });
 
 socket.on('error', ({ message }) => showToast(message));
