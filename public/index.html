@@ -504,9 +504,9 @@
         <div class="tb-sub"  id="tb-sub"></div>
       </div>
       <div class="clue-input-row" id="clue-row" style="display:none">
-        <input type="text" id="input-clue" placeholder="Uma palavra…" maxlength="30"
+        <input type="text" id="input-clue" placeholder="Palavra (opcional)…" maxlength="30"
                autocomplete="off" autocorrect="off">
-        <button type="button" class="btn btn-primary" id="btn-clue">Enviar</button>
+        <button type="button" class="btn btn-primary" id="btn-clue">Terminei ✓</button>
       </div>
       <div id="skip-wrap" style="display:none;margin-bottom:10px">
         <button type="button" class="btn btn-ghost" id="btn-skip">Pular jogador atual</button>
@@ -770,8 +770,7 @@ document.getElementById('btn-skip').addEventListener('click', () => {
 
 function submitClue() {
   const clue = document.getElementById('input-clue').value.trim();
-  if (!clue)          { showToast('Digite sua dica'); return; }
-  if (/\s/.test(clue)){ showToast('A dica deve ser uma única palavra'); return; }
+  if (clue && /\s/.test(clue)) { showToast('A dica deve ser uma única palavra'); return; }
   document.getElementById('btn-clue').disabled = true;
   socket.emit('submit-clue', { code: roomCode, token: myToken, clue });
 }
@@ -780,7 +779,8 @@ function renderCluing(currentToken, order, submittedClues, allDone) {
   if (order) clueOrder = order;
 
   const clueMap = {};
-  (submittedClues || []).forEach(c => { if (c.clue) clueMap[c.token] = c.clue; });
+  const cluedSet = new Set();
+  (submittedClues || []).forEach(c => { cluedSet.add(c.token); if (c.clue) clueMap[c.token] = c.clue; });
 
   const currentIdx = (!allDone && currentToken)
     ? clueOrder.findIndex(p => p.token === currentToken)
@@ -819,7 +819,7 @@ function renderCluing(currentToken, order, submittedClues, allDone) {
   } else if (isMyTurn) {
     banner.className = 'turn-banner mine';
     tbName.textContent = 'Sua vez!';
-    tbSub.textContent  = 'Dê uma dica de UMA palavra sobre sua palavra secreta';
+    tbSub.textContent  = 'Fale sua dica em voz alta e toque em Terminei (digitar é opcional)';
     clueRow.style.display  = 'flex';
     skipWrap.style.display = 'none';
     document.getElementById('input-clue').value = '';
@@ -837,16 +837,19 @@ function renderCluing(currentToken, order, submittedClues, allDone) {
   // Clue entries
   document.getElementById('clue-list').innerHTML = clueOrder.map((p, i) => {
     const submitted = clueMap[p.token];
+    const hasClued  = cluedSet.has(p.token);
     const isCurrent = i === currentIdx && !allDone;
-    const isPending = !submitted && !isCurrent;
+    const isPending = !hasClued && !isCurrent;
     let cls = 'ce';
     if (isCurrent) cls += ' active';
     if (isPending) cls += ' pending';
     const wordHtml = submitted
       ? `<span class="ce-word">${esc(submitted)}</span>`
-      : isCurrent
-        ? `<span class="ce-word" style="color:var(--muted);font-style:italic">digitando…</span>`
-        : `<span class="ce-word" style="color:var(--border)">—</span>`;
+      : hasClued
+        ? `<span class="ce-word" style="color:var(--muted)">🗣️ falou</span>`
+        : isCurrent
+          ? `<span class="ce-word" style="color:var(--muted);font-style:italic">falando…</span>`
+          : `<span class="ce-word" style="color:var(--border)">—</span>`;
     const spinner = isCurrent ? '<div class="ce-spin"></div>' : '';
     return `<div class="${cls}">
       <span class="ce-n">${i+1}</span>
@@ -870,7 +873,7 @@ function renderVoting(clues, alreadyVoted) {
       <div class="vc-av" style="background:${col}1f;color:${col};border:1.5px solid ${col}">${esc(initial(c.name))}</div>
       <div style="flex:1;min-width:0">
         <div class="vc-name">${esc(c.name)}${isMe ? ' <span style="color:var(--muted);font-size:12px">(você)</span>' : ''}</div>
-        <div class="vc-clue">Dica: <em>${esc(c.clue || '—')}</em></div>
+        <div class="vc-clue">Dica: <em>${c.clue ? esc(c.clue) : '🗣️ falada em voz alta'}</em></div>
       </div></div>`;
   }).join('');
 
@@ -1011,7 +1014,7 @@ socket.on('clue-submitted', ({ nextToken, clueIndex: idx, players: updPlayers })
   clueIndex = idx;
   players   = updPlayers || players;
   const submitted = players
-    .filter(p => p.clue)
+    .filter(p => p.hasClued)
     .map(p => ({ token: p.token, name: p.name, clue: p.clue }));
   if (nextToken) { renderCluing(nextToken, null, submitted); }
   else           { renderCluing(null, null, submitted, true); }
@@ -1063,7 +1066,7 @@ socket.on('state-restore', data => {
       break;
     case 'cluing': {
       const curTok = clueOrder[clueIndex]?.token;
-      const subs   = (data.clues || []).filter(c => c.clue);
+      const subs   = (data.clues || []).filter(c => c.hasClued);
       renderCluing(curTok, clueOrder, subs);
       showScreen('cluing');
       break;

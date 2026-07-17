@@ -222,7 +222,7 @@ io.on('connection', (socket) => {
         clueIndex: room.clueIndex,
         clues: room.clueOrder.map(t => {
           const p = room.players.get(t);
-          return { token: t, name: p?.name, clue: p?.clue || null };
+          return { token: t, name: p?.name, clue: p?.clue || null, hasClued: p?.hasClued || false };
         }),
         results: room.lastResults,
       };
@@ -348,7 +348,6 @@ io.on('connection', (socket) => {
     if (!player || player.hasClued) return;
 
     const cleaned = (clue || '').trim().substring(0, 30);
-    if (!cleaned) return;
 
     player.clue = cleaned;
     player.hasClued = true;
